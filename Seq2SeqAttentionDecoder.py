@@ -42,12 +42,17 @@ class Seq2SeqAttentionDecoder(AttentionDecoder):
         super().__init__()
         self.attention = d2l.AdditiveAttention(num_hiddens, dropout)
         self.embedding = nn.Embedding(vocab_size, embed_size)
+        #rnn은 (sequence, batch, feature)순으로 텐서 차원을 인식한다. batch_first=True를 통해서 b, s ,f 순으로도 받을 수 있다. 
         self.rnn = nn.GRU(embed_size+num_hiddens, num_hiddens, num_layers, dropout = dropout)
         self.dense = nn.LazyLinear(vocab_size)
         #빠트린 부분 
         #모델 초기화 과정에서 모델 파라미터들의 초기화는 필수적이다. 여기서 모델 파라미터를 activation에 맞는 다양한 initializing 방법으로 초기화 할 수 있기 때문에 내가 원하는 초기화 방식을 메서드화시킨 d2l.init_seq2seq를 사용한다.
         self.apply(d2l.init_seq2seq)
 
+    def init_state(self, enc_outputs, enc_valid_lens):
+        outputs, hidden_state = enc_outputs
+        #state에 들어갈 객체
+        return (outputs.permute(1,0,2), hidden_state, enc_valid_lens)
     def forward(self, X, state):
         #tensor shape comment is good 
         #enc_outputs.shape : (batch_size, num_steps, num_hiddens)
@@ -57,6 +62,7 @@ class Seq2SeqAttentionDecoder(AttentionDecoder):
         X = self.embedding(X).permute(1,0,2)
         outputs, self._attention_weights = [], [] 
         for x in X:
+            #매 시퀀스 생성마다 attention이 달라지므로 sequence 축을 1로 설정해서 gru에 반복적으로 넣는다. 
             #shape of query : (batch_size, 1, num_hiddens)
             query = torch.unsqueeze(hiddens_state[-1], dim=1)
             #shape of context: (batch_size, 1, num_hiddens)
