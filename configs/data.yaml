@@ -1,0 +1,32 @@
+img_size: 256
+
+train_transforms:
+  
+  pad_if_needed:
+    min_height: 256
+    min_width: 256
+    border_mode: "constant" # 0으로 채움
+    value: 0
+  
+  # 2. 방향성 제거 (D4 Symmetry)
+  horizontal_flip:
+    p: 0.5
+  vertical_flip:
+    p: 0.5
+  random_rotate_90:
+    p: 0.5
+
+  # 3. 비선형 변형 (세포의 찌그러짐 모사)
+  elastic_transform:
+    p: 0.3
+    alpha: 120
+    sigma: 120
+    alpha_affine: 120
+
+# 검증용 파이프라인 (증강 없이 크기만 맞춤)
+val_transforms:
+  pad_if_needed:
+    min_height: 256
+    min_width: 256
+    border_mode: "constant"
+    value: 0  
