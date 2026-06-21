@@ -71,34 +71,40 @@ def fetch_data_concurrently(df: pd.DataFrame, target_folder: Path, pkg: quilt3.P
 def build_cell_dataset(
     num_samples: int | Literal['all'] = 1, 
     test_size: float = 0.2, 
-    data_dir: str | Path = './data',
+    data_dir: str | Path = './data/raw',
     max_workers: int = 8
 ) -> None:
 
     base_dir = Path(data_dir)
-    train_dir = base_dir / 'train'
-    val_dir = base_dir / 'val'
-    csv_path = base_dir / 'metadata.csv'
-
+    base_dir.mkdir(parents=True, exist_ok=True)
+    
+    train_dir = base_dir / 'images' / 'train'
+    val_dir = base_dir / 'images' / 'val'
+    
     train_dir.mkdir(parents=True, exist_ok=True)
     val_dir.mkdir(parents=True, exist_ok=True)
 
-    if not csv_path.exists():
+    logger.info("Connecting to Allen Institute Quilt3 registry...")
+    pkg = quilt3.Package.browse('aics/pipeline_integrated_single_cell', 's3://allencell')
+    
+    target_file = "metadata.csv"
+    
+    if target_file not in pkg:
         raise FileNotFoundError(
-            f"Metadata file missing at '{csv_path}'. "
-            "Please initialize metadata using quilt3 first."
+            f"Metadata file '{target_file}' missing in the Quilt3 package 'aics/pipeline_integrated_single_cell'."
+            "Please check the exact file name in the package contents."
         )
-
-    df = pd.read_csv(csv_path, low_memory=False)
-
+    
+    df_meta = pkg[target_file]()
+    
     if isinstance(num_samples, int):
         actual_n = min(num_samples, len(df))
-        sampled_df = df.sample(n=actual_n, random_state=42)
+        sampled_df = df_meta.sample(n=actual_n, random_state=42)
         if actual_n < num_samples:
             logger.warning(f"Requested {num_samples} samples, but only {actual_n} available. Using all data")
         
     elif num_samples == 'all':
-        sampled_df = df
+        sampled_df = df_meta
     else:
         raise ValueError(f"num_samples argument must be an integer or 'all'") 
 
