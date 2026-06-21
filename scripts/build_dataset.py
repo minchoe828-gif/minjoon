@@ -12,6 +12,7 @@ from src.utils.logger_setup import setup_project_logger
 setup_project_logger()
 
 @logger.catch(reraise=False)
+#s3_path의 cell image를 local_path에 저장시키는 함수이다.
 def download_single_file(pkg: quilt3.Package, s3_path: str, local_path: Path, retries: int = 3) -> bool:
     if local_path.exists():
         return True
@@ -29,6 +30,7 @@ def download_single_file(pkg: quilt3.Package, s3_path: str, local_path: Path, re
     return False
 
 @logger.catch
+#df를 바탕으로 주어진 폴더에 image를 병렬적으로 다운받는 함수이다. 
 def fetch_data_concurrently(df: pd.DataFrame, target_folder: Path, pkg: quilt3.Package, max_workers: int = 8) -> None:
     if 'save_reg_path' not in df.columns:
         raise ValueError("The metadata CSV does not contain the required 'save_reg_path' column.")
@@ -65,6 +67,7 @@ def fetch_data_concurrently(df: pd.DataFrame, target_folder: Path, pkg: quilt3.P
     logger.info(f"[{target_folder.name}] Fetch complete. Success: {success_count}, Failed: {fail_count}")
 
 @logger.catch
+#dataset을 위한 cell 이미지들을 다운받아서 각각 data/raw/images/train, data/raw/images/val 에 저장시키는 함수이다. 
 def build_cell_dataset(
     num_samples: int | Literal['all'] = 1, 
     test_size: float = 0.2, 
